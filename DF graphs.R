@@ -1,5 +1,6 @@
 library(ggplot2)
 library(urca)
+library(latex2exp)
 
 #To do an OLS fit yourself
 dick <- function(nobs,rep){
@@ -19,11 +20,13 @@ dick <- function(nobs,rep){
     }
     se <- sqrt(ssr / (nobs-3)) / sqrt(sum((yt - mean(yt))^2)) 
     DF.100[i] <- beta / se
+    print(i)
   }
   return(DF.100)
 }
 
 dick_intercept <- function(nobs,rep){
+  counter <- 0
   DF.100 <- rep(NA, rep)
   for(i in 1:rep){
     yt <- cumsum(rnorm(nobs))
@@ -43,6 +46,10 @@ dick_intercept <- function(nobs,rep){
     }
     se <- sqrt(ssr / (nobs-3)) / sqrt(sum((yt - mean(yt))^2)) 
     DF.100[i] <- beta / se
+    if(round((i/rep)*100,digits=1)-0.1>counter){
+      counter <- round((i/rep)*100,digits=1)
+      print(round((i/rep)*100,digits=1))
+    }
   }
   return(DF.100)
 }
@@ -71,89 +78,26 @@ dick_time_trend <- function(nobs,rep){
   }
   return(DF.100)
 }
-
+TeX(r'($DF_t$)')
 df <- as.data.frame(dick(1000,100000))
 df2 <- as.data.frame(dick_intercept(1000,100000))
 df3 <- as.data.frame(dick_time_trend(1000,100000))
 
-
 #This is the graph!!
-p <- ggplot() + geom_freqpoly(data=df,aes(df[,1],colour="No Intercept"), bins=bw) +
-  geom_freqpoly(data=df2,aes(df2[,1], colour="With Intercept"), bins=bw) + 
-  geom_freqpoly(data=df3,aes(df3[,1], colour="With Time Trend"), bins=bw) +
-  xlim(-0.6, 0.2); p
+bw <- 55
+p <- ggplot() + geom_freqpoly(data=df,aes(df[,1],colour='red'), bins=bw) +
+  geom_freqpoly(data=df2,aes(df2[,1], colour='green'), bins=bw) + 
+  geom_freqpoly(data=df3,aes(df3[,1], colour='blue'), bins=bw) +
+  xlim(-0.6, 0.2)+ labs(colour = "Time Series")+
+  theme(legend.position = c(0.32, 0.75),axis.title.x=element_blank(),legend.text = element_text(size=15))+ 
+  labs(  y="Count", x = "Sepal length (cm)") +
+  scale_colour_manual(values = c('red' = 'red','blue' = 'blue','green'='green'),name = '', 
+                    labels = expression(DF[t],DF[t]^mu,DF[t]^tau)); p
 
-
-
-#Everything down here is just practise!
-nrow(df)
-bw <- 70
-#Histogram plot
-ggplot(data=df, aes(df[,1])) + 
-  geom_histogram(bins=bw) +
-  stat_function(fun = function(x) 
-    dnorm(x, mean = mean(df[,1]), sd = sd(df[,1])) * (n*0.7))
-
-ggplot(data=df3, aes(df3[,1])) + 
-  geom_histogram(bins=bw) +
-  stat_function(fun = function(x) 
-    dnorm(x, mean = mean(df3[,1]), sd = sd(df3[,1])) * (n*0.7))
-
-df
-df[,1]
-graph_1 <-  ggplot(data=df, aes(df[,1]))+
-  geom_freqpoly(bins=bw); graph_1
-graph_2 <-  ggplot(data=df2, aes(df2[,1]))+
-  geom_freqpoly(bins=bw); graph_2
-graph_3 <-  ggplot(data=df3, aes(df3[,1]))+
-  geom_freqpoly(bins=bw); graph_3
-
-graph_done <- ggplot(data=df_super, aes(x=df_super[,1],y=df_super[,2],z=df_super[,3]))+
-  geom_freqpoly(bins=bw); graph_done
-
-
-n = 1000
-t = 100
-No.Ex = 10
-steps = seq(0,t,length=n+1)
-A = replicate(No.Ex, {
-  bm <- c(0, cumsum(rnorm(n,0,sqrt(t/n))))
-}) 
-A
-bm
-t <- 0:100  # time
-sig2 <- 0.01
-## first, simulate a set of random deviates
-x <- rnorm(n = length(t) - 1, sd = sqrt(1))
-## now compute their cumulative sum
-x <- c(0, cumsum(x))
-
-y <- rnorm(n = length(t) - 1, sd = sqrt(sig2))
-## now compute their cumulative sum
-y <- c(0, cumsum(y))
-
-z <- rnorm(n = length(t) - 1, sd = sqrt(sig2))
-## now compute their cumulative sum
-z <- c(0, cumsum(z))
-
-
-
-t <- 1:9
-x <- c(0, 2, 0, 4, 4, 4, 0, 2, 0)
-x - detrend(x, 'constant')
-x - detrend(x, 'linear')
-yt <- cumsum(rnorm(nobs))
-y <- detrend(yt, 'linear', 5)
-y2 <- detrend(yt, 'constant')
-y3 <- detrend(detrend(yt, 'constant'),'linear')
-plot(y)
-plot(yt)
-plot(y2)
-plot(y3)
-y <- detrend(x, 'linear')
-## Not run: 
- plot(t, y, col="blue")
- lines(t, y - y, col="red")
- grid()## End(Not run)
+pdf(file = "/Users/sorenthode/Dropbox/Mac/Desktop/P7/Projekt/Rstuff/DFgraph.pdf",   # The directory you want to save the file in
+    width = 6, # The width of the plot in inches
+    height = 4)
+file.choose()
+dev.off()
 
  
