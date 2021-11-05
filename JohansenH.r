@@ -6,68 +6,72 @@ library(dplyr)
 library(lubridate)
 library(forecast)
 library(pracma)
-
+library(RCurl)
 
 #Define the data
 #Order the data by dates such that they are in ascending order
 #Remove NA rows for dates
 #Keep only date and close price
 #Close -> numeric and date -> date
-BNB <- readr::read_delim("Binance_BNBUSDT_1h.csv", delim = ",")
-  BNB <- as.data.frame(BNB)
-  BNB <- t(BNB)
-  BNB <- as.data.frame(BNB)
-  BNB <- rev(BNB)
-  BNB <- t(BNB)
-  BNB <- as.data.frame(BNB)
-    #BNB <- BNB[, -1]
-    #BNB <- BNB[, -c(2:5)]
-    #BNB <- BNB[, -c(3:5)]
-      BNB$date <- lubridate::ymd_hms(BNB$date, tz = "UCT")
-      BNB$close <- as.numeric(BNB$close)
-        BNB <- na.omit(BNB)
-  
-BTC <- readr::read_delim("Binance_BTCUSDT_1h.csv", delim = ",")
-  BTC <- as.data.frame(BTC)
-  BTC <- t(BTC)
-  BTC <- as.data.frame(BTC)
-  BTC <- rev(BTC)
-  BTC <- t(BTC)
-  BTC <- as.data.frame(BTC)
-  #  BTC <- BTC[, -1]
-   # BTC <- BTC[, -c(2:5)]
-    #BTC <- BTC[, -c(3:5)]
-      BTC$date <- lubridate::ymd_hms(BTC$date, tz = "UCT")
-      BTC$close <- as.numeric(BTC$close)
-        BTC <- na.omit(BTC)
-      
-ETH <- readr::read_delim("Binance_ETHUSDT_1h.csv", delim = ",")
-  ETH <- as.data.frame(ETH)
-  ETH <- t(ETH)
-  ETH <- as.data.frame(ETH)
-  ETH <- rev(ETH)
-  ETH <- t(ETH)
-  ETH <- as.data.frame(ETH)
-    #ETH <- ETH[, -1]
-    #ETH <- ETH[, -c(2:5)]
-    #ETH <- ETH[, -c(3:5)]
-      ETH$date <- lubridate::ymd_hms(ETH$date, tz = "UCT")
-      ETH$close <- as.numeric(ETH$close)
-        ETH <- na.omit(ETH)
+BNB <- getURL("https://raw.githubusercontent.com/sthode18/P7/main/Binance_BNBUSDT_1h.csv")
+BNB <- read.csv(text=BNB)
+BNB <- as.data.frame(BNB)
+BNB <- t(BNB)
+BNB <- as.data.frame(BNB)
+BNB <- rev(BNB)
+BNB <- t(BNB)
+BNB <- as.data.frame(BNB)
+#BNB <- BNB[, -1]
+#BNB <- BNB[, -c(2:5)]
+#BNB <- BNB[, -c(3:5)]
+BNB$date <- lubridate::ymd_hms(BNB$date, tz = "UCT")
+BNB$close <- as.numeric(BNB$close)
+BNB <- na.omit(BNB)
 
-LTC <- readr::read_delim("Binance_LTCUSDT_1h.csv", delim = ",")
-  LTC <- as.data.frame(LTC)
-  LTC <- t(LTC)
-  LTC <- as.data.frame(LTC)
-  LTC <- rev(LTC)
-  LTC <- t(LTC)
-  LTC <- as.data.frame(LTC)
-    #LTC <- LTC[, -1]
-    #LTC <- LTC[, -c(2:5)]
-    #LTC <- LTC[, -c(3:5)]
-      LTC$date <- lubridate::ymd_hms(LTC$date, tz = "UCT")
-      LTC$close <- as.numeric(LTC$close)
-        LTC <- na.omit(LTC)
+BTC <- getURL("https://raw.githubusercontent.com/sthode18/P7/main/Binance_BTCUSDT_1h.csv")
+BTC <- read.csv(text=BTC)
+BTC <- as.data.frame(BTC)
+BTC <- t(BTC)
+BTC <- as.data.frame(BTC)
+BTC <- rev(BTC)
+BTC <- t(BTC)
+BTC <- as.data.frame(BTC)
+#  BTC <- BTC[, -1]
+# BTC <- BTC[, -c(2:5)]
+#BTC <- BTC[, -c(3:5)]
+BTC$date <- lubridate::ymd_hms(BTC$date, tz = "UCT")
+BTC$close <- as.numeric(BTC$close)
+BTC <- na.omit(BTC)
+
+ETH <- getURL("https://raw.githubusercontent.com/sthode18/P7/main/Binance_ETHUSDT_1h.csv")
+ETH <- red.csv(text=ETH)
+ETH <- as.data.frame(ETH)
+ETH <- t(ETH)
+ETH <- as.data.frame(ETH)
+ETH <- rev(ETH)
+ETH <- t(ETH)
+ETH <- as.data.frame(ETH)
+#ETH <- ETH[, -1]
+#ETH <- ETH[, -c(2:5)]
+#ETH <- ETH[, -c(3:5)]
+ETH$date <- lubridate::ymd_hms(ETH$date, tz = "UCT")
+ETH$close <- as.numeric(ETH$close)
+ETH <- na.omit(ETH)
+
+LTC <- getURL("https://raw.githubusercontent.com/sthode18/P7/main/Binance_LTCUSDT_1h.csv")
+LTC <- read.csv(text=LTC)
+LTC <- as.data.frame(LTC)
+LTC <- t(LTC)
+LTC <- as.data.frame(LTC)
+LTC <- rev(LTC)
+LTC <- t(LTC)
+LTC <- as.data.frame(LTC)
+#LTC <- LTC[, -1]
+#LTC <- LTC[, -c(2:5)]
+#LTC <- LTC[, -c(3:5)]
+LTC$date <- lubridate::ymd_hms(LTC$date, tz = "UCT")
+LTC$close <- as.numeric(LTC$close)
+LTC <- na.omit(LTC)
 
 #Plot of time series
 ggplot(BNB, aes(x=date, y=close)) + geom_line() + ggtitle("Hourly closing price of Binance Coin")
@@ -129,3 +133,12 @@ newdf_LTC <- data.frame(detrended_coint_LTC, LTC$date)
 ggplot(newdf_LTC, aes(x=LTC.date, y=detrended_coint_LTC)) + geom_line() + ggtitle("Detrended Litecoin")
 
 #Detrending before johansen is applied.
+
+
+
+
+
+
+library(RCurl)
+x <- getURL("https://raw.github.com/aronlindberg/latent_growth_classes/master/LGC_data.csv")
+y <- read.csv(text = x)
