@@ -82,30 +82,34 @@ all_coins <- data.frame(BNB$close, BTC$close, ETH$close, LTC$close)
 VARselect(all_coins)
 
 #Johansen cointegration method
-johansen <- ca.jo(all_coins[1:8800,], type="eigen", K=2, 
+johansen <- ca.jo(all_coins, type="trace", K=2, 
                   ecdet="trend", spec="longrun")
 summary(johansen)
+#data.frame(johansen@ZK[,1]*johansen@V[1,1], johansen@ZK[,2]*johansen@V[2,1], 
+#  johansen@ZK[,3]*johansen@V[3,1], johansen@ZK[,4]*johansen@V[4,1], 
+#  johansen@ZK[,5]*johansen@V[5,1])
 
 plot_residuals <- function(z){
   fuck <- johansen@R0[,z]
   if (z == 1){
-    newdf_BNB_n <- data.frame(fuck, BNB[1:8798,]$date)
-    print(ggplot(newdf_BNB_n, aes(x=BNB.1.8798....date, y=fuck)) + geom_line() + xlab("") + ylab("") + ggtitle("Binance residuals"))
+    newdf_BNB_n <- data.frame(fuck, BNB[3:11000,]$date)
+    print(ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=fuck)) + geom_line() + xlab("") + ylab("") + ggtitle("Binance residuals"))
   }
   if (z == 2){
-    newdf_BNB_n <- data.frame(fuck, BTC[1:8798,]$date)
-    print(ggplot(newdf_BNB_n, aes(x=BTC.1.8798....date, y=fuck)) + geom_line() + xlab("") + ylab("") + ggtitle("Bitcoin residuals"))
+    newdf_BNB_n <- data.frame(fuck, BTC[3:11000,]$date)
+    print(ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=fuck)) + geom_line() + xlab("") + ylab("") + ggtitle("Bitcoin residuals"))
   }
   if (z == 3){
-    newdf_BNB_n <- data.frame(fuck, ETH[1:8798,]$date)
-    print(ggplot(newdf_BNB_n, aes(x=ETH.1.8798....date, y=fuck)) + geom_line() + xlab("") + ylab("") + ggtitle("Etherium residuals"))
+    newdf_BNB_n <- data.frame(fuck, ETH[3:11000,]$date)
+    print(ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=fuck)) + geom_line() + xlab("") + ylab("") + ggtitle("Etherium residuals"))
   }
   if (z == 4){
-    newdf_BNB_n <- data.frame(fuck, LTC[1:8998,]$date)
-    print(ggplot(newdf_BNB_n, aes(x=LTC.1.8798....date, y=fuck)) + geom_line() + xlab("") + ylab("") + ggtitle("Litecoin residuals"))
+    newdf_BNB_n <- data.frame(fuck, LTC[3:11000,]$date)
+    print(ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=fuck)) + geom_line() + xlab("") + ylab("") + ggtitle("Litecoin residuals"))
   }
 }
 
+#1=BNB, 2=BTC, 3=ETH, 4=LTC
 plot_residuals(1)
 
 plot_qq <- function(z){
@@ -113,6 +117,7 @@ qqnorm(johansen@R0[,z], pch = 1, frame = FALSE)
 qqline(johansen@R0[,z], col = "steelblue", lwd = 2)
 }
 
+#1=BNB, 2=BTC, 3=ETH, 4=LTC
 plot_qq(1)
 
 plot(density(fuck, width = 100))
@@ -120,30 +125,105 @@ plot(density(fuck, width = 100))
 #Aka linear combinations wrt. cointegration vector
 finalplots <- function(z, ecdet){
   if (ecdet == "none"){
-    wtf <- BNB$close - johansen@V[2, z]*BTC$close + johansen@V[3, z]*ETH$close + johansen@V[4, z]*LTC$close
+    wtf <- johansen@ZK[,1]*johansen@V[1,z] - (johansen@ZK[,2]*johansen@V[2,z] + johansen@ZK[,3]*johansen@V[3,z] + johansen@ZK[,4]*johansen@V[4,z])
   }
   if (ecdet == "trend"){
-    wtf <- BNB$close - johansen@V[2, z]*BTC$close + johansen@V[3, z]*ETH$close + johansen@V[4, z]*LTC$close + johansen@V[5, z]*trend
+    wtf <- johansen@ZK[,1]*johansen@V[1,z] - (johansen@ZK[,2]*johansen@V[2,z] + johansen@ZK[,3]*johansen@V[3,z] + johansen@ZK[,4]*johansen@V[4,z] + johansen@ZK[,5]*johansen@V[5,z])
   }
-  newdf_BNB <- data.frame(wtf, BNB$date)[9001:11000, ]
-  ggplot(newdf_BNB_n, aes(x=BNB.date, y=wtf)) + geom_line() + ggtitle("Binance differenced-ish")
+  newdf_BNB <- data.frame(wtf, BNB[3:11000,]$date)
+  if (z == 1)
+    p <- ggplot(newdf_BNB, aes(x=newdf_BNB[,2], y=wtf)) + xlab("") + ylab("") + geom_line() + ggtitle("Binance Coin")
+  if (z == 2)
+    p <- ggplot(newdf_BNB, aes(x=newdf_BNB[,2], y=wtf)) + xlab("") + ylab("") + geom_line() + ggtitle("Bitcoin")
+  if (z == 3)
+    p <- ggplot(newdf_BNB, aes(x=newdf_BNB[,2], y=wtf)) + xlab("") + ylab("") + geom_line() + ggtitle("Etherium")
+  if (z == 4)
+    p <- ggplot(newdf_BNB, aes(x=newdf_BNB[,2], y=wtf)) + xlab("") + ylab("") + geom_line() + ggtitle("Litecoin")
+  return(p)
 }
 
 finalplots_dt <- function(z, ecdet){
   if (ecdet == "none"){
-    wtf <- BNB$close - johansen@V[2, z]*BTC$close + johansen@V[3, z]*ETH$close + johansen@V[4, z]*LTC$close
+    wtf <- johansen@ZK[,1]*johansen@V[1,z] - (johansen@ZK[,2]*johansen@V[2,z] + johansen@ZK[,3]*johansen@V[3,z] + johansen@ZK[,4]*johansen@V[4,z])
   }
   if (ecdet == "trend"){
-    wtf <- BNB$close - johansen@V[2, z]*BTC$close + johansen@V[3, z]*ETH$close + johansen@V[4, z]*LTC$close + johansen@V[5, z]*trend
+    wtf <- johansen@ZK[,1]*johansen@V[1,z] - (johansen@ZK[,2]*johansen@V[2,z] + johansen@ZK[,3]*johansen@V[3,z] + johansen@ZK[,4]*johansen@V[4,z] + johansen@ZK[,5]*johansen@V[5,z])
   }
   wtf_dt <- detrend(wtf)
-  newdf_BNB_n <- data.frame(wtf_dt, BNB$date)[9001:11000, ]
-  ggplot(newdf_BNB_n, aes(x=BNB.date, y=wtf_dt)) + geom_line() + ggtitle("Detrended Binance differenced-ish")
+  newdf_BNB_n <- data.frame(wtf_dt, BNB[3:11000,]$date)
+  if (z == 1)
+    p <- ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=wtf_dt)) + xlab("") + ylab("") + geom_line() + ggtitle("Binance Coin")
+  if (z == 2)
+    p <- ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=wtf_dt)) + xlab("") + ylab("") + geom_line() + ggtitle("Bitcoin")
+  if (z == 3)
+    p <- ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=wtf_dt)) + xlab("") + ylab("") + geom_line() + ggtitle("Etherium")
+  if (z == 4)
+    p <- ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=wtf_dt)) + xlab("") + ylab("") + geom_line() + ggtitle("Litecoin")
+  return(p)
 }
 
-finalplots(1, ecdet = "trend")
+#1=BNB, 2=BTC, 3=ETH, 4=LTC
+finalplots(2, ecdet = "trend")
 
 finalplots_dt(1, ecdet = "trend")
+
+#Final plots with residuals instead of the entire process
+finalplots_res <- function(z, ecdet){
+  if (ecdet == "none"){
+    wtf <- johansen@RK[,1]*johansen@V[1,z] - (johansen@RK[,2]*johansen@V[2,z] + johansen@RK[,3]*johansen@V[3,z] + johansen@RK[,4]*johansen@V[4,z])
+  }
+  if (ecdet == "trend"){
+    wtf <- johansen@RK[,1]*johansen@V[1,z] - (johansen@RK[,2]*johansen@V[2,z] + johansen@RK[,3]*johansen@V[3,z] + johansen@RK[,4]*johansen@V[4,z] + johansen@RK[,5]*johansen@V[5,z])
+  }
+  newdf_BNB <- data.frame(wtf, BNB[3:11000,]$date)
+  if (z == 1)
+    p <- ggplot(newdf_BNB, aes(x=newdf_BNB[,2], y=wtf)) + xlab("") + ylab("") + geom_line() + ggtitle("Binance Coin")
+  if (z == 2)
+    p <- ggplot(newdf_BNB, aes(x=newdf_BNB[,2], y=wtf)) + xlab("") + ylab("") + geom_line() + ggtitle("Bitcoin")
+  if (z == 3)
+    p <- ggplot(newdf_BNB, aes(x=newdf_BNB[,2], y=wtf)) + xlab("") + ylab("") + geom_line() + ggtitle("Etherium")
+  if (z == 4)
+    p <- ggplot(newdf_BNB, aes(x=newdf_BNB[,2], y=wtf)) + xlab("") + ylab("") + geom_line() + ggtitle("Litecoin")
+  return(p)
+}
+
+finalplots_res_dt <- function(z, ecdet){
+  if (ecdet == "none"){
+    wtf <- johansen@RK[,1]*johansen@V[1,z] - (johansen@RK[,2]*johansen@V[2,z] + johansen@RK[,3]*johansen@V[3,z] + johansen@RK[,4]*johansen@V[4,z])
+  }
+  if (ecdet == "trend"){
+    wtf <- johansen@RK[,1]*johansen@V[1,z] - (johansen@RK[,2]*johansen@V[2,z] + johansen@RK[,3]*johansen@V[3,z] + johansen@RK[,4]*johansen@V[4,z] + johansen@RK[,5]*johansen@V[5,z])
+  }
+  wtf_dt <- detrend(wtf)
+  newdf_BNB_n <- data.frame(wtf_dt, BNB[3:11000,]$date)
+  if (z == 1)
+    p <- ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=wtf_dt)) + xlab("") + ylab("") + geom_line() + ggtitle("Binance Coin")
+  if (z == 2)
+    p <- ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=wtf_dt)) + xlab("") + ylab("") + geom_line() + ggtitle("Bitcoin")
+  if (z == 3)
+    p <- ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=wtf_dt)) + xlab("") + ylab("") + geom_line() + ggtitle("Etherium")
+  if (z == 4)
+    p <- ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=wtf_dt)) + xlab("") + ylab("") + geom_line() + ggtitle("Litecoin")
+  return(p)
+}
+
+finalplots_res(2, ecdet="trend")
+
+finalplots_res_dt(1, ecdet="trend")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #Construct VECM to determine strategy??
 library(tsDyn)
 est_tsdyn <- VECM(all_coins, 2, r = 1, include = "none", estim = "ML", exogen = trend)
