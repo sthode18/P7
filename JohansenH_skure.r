@@ -1,82 +1,72 @@
 #Load packages
 pacman::p_load(readr, tseries, urca, ggplot2, dplyr, lubridate, forecast,
-               pracma, vars, stats, car)
+               pracma, vars, stats, tsDyn)
 
 #Define the data
 #Order the data by dates such that they are in ascending order
-#Remove NA rows for dates
+fix <- function(x){
+  as.data.frame(t(rev(as.data.frame(t(as.data.frame(readr::read_delim(x, delim = ",")))))))
+}
+
+#Fix the time-series
 #Close -> numeric and date -> date
-BNB <- readr::read_delim("Binance_BNBUSDT_1h.csv", delim = ",")
-BNB <- as.data.frame(BNB)
-BNB <- t(BNB)
-BNB <- as.data.frame(BNB)
-BNB <- rev(BNB)
-BNB <- t(BNB)
-BNB <- as.data.frame(BNB)
-BNB$date <- lubridate::ymd_hms(BNB$date, tz = "UCT")
-BNB$close <- as.numeric(BNB$close)
-BNB <- na.omit(BNB)
+#Remove NA rows for dates
+BNB <- fix("Binance_BNBUSDT_1h.csv")
+  BNB$date <- lubridate::ymd_hms(BNB$date, tz = "UCT")
+  BNB$close <- as.numeric(BNB$close)
+    BNB <- na.omit(BNB)
 
-BTC <- readr::read_delim("Binance_BTCUSDT_1h.csv", delim = ",")
-BTC <- as.data.frame(BTC)
-BTC <- t(BTC)
-BTC <- as.data.frame(BTC)
-BTC <- rev(BTC)
-BTC <- t(BTC)
-BTC <- as.data.frame(BTC)
-BTC$date <- lubridate::ymd_hms(BTC$date, tz = "UCT")
-BTC$close <- as.numeric(BTC$close)
-BTC <- na.omit(BTC)
+BTC <- fix("Binance_BTCUSDT_1h.csv")
+  BTC$date <- lubridate::ymd_hms(BTC$date, tz = "UCT")
+  BTC$close <- as.numeric(BTC$close)
+    BTC <- na.omit(BTC)
 
-ETH <- readr::read_delim("Binance_ETHUSDT_1h.csv", delim = ",")
-ETH <- as.data.frame(ETH)
-ETH <- t(ETH)
-ETH <- as.data.frame(ETH)
-ETH <- rev(ETH)
-ETH <- t(ETH)
-ETH <- as.data.frame(ETH)
-ETH$date <- lubridate::ymd_hms(ETH$date, tz = "UCT")
-ETH$close <- as.numeric(ETH$close)
-ETH <- na.omit(ETH)
+ETH <- fix("Binance_ETHUSDT_1h.csv")
+  ETH$date <- lubridate::ymd_hms(ETH$date, tz = "UCT")
+  ETH$close <- as.numeric(ETH$close)
+    ETH <- na.omit(ETH)
 
-LTC <- readr::read_delim("Binance_LTCUSDT_1h.csv", delim = ",")
-LTC <- as.data.frame(LTC)
-LTC <- t(LTC)
-LTC <- as.data.frame(LTC)
-LTC <- rev(LTC)
-LTC <- t(LTC)
-LTC <- as.data.frame(LTC)
-LTC$date <- lubridate::ymd_hms(LTC$date, tz = "UCT")
-LTC$close <- as.numeric(LTC$close)
-LTC <- na.omit(LTC)
+LTC <- fix("Binance_LTCUSDT_1h.csv")
+  LTC$date <- lubridate::ymd_hms(LTC$date, tz = "UCT")
+  LTC$close <- as.numeric(LTC$close)
+    LTC <- na.omit(LTC)
 
 #Plot of time series
-ggplot(BNB, aes(x=date, y=close)) + geom_line() + xlab("Date") + ylab("USD")
-ggplot(BTC, aes(x=date, y=close)) + geom_line() + xlab("Date") + ylab("USD")
-ggplot(ETH, aes(x=date, y=close)) + geom_line() + xlab("Date") + ylab("USD")
-ggplot(LTC, aes(x=date, y=close)) + geom_line() + xlab("Date") + ylab("USD")
+tsplot <- function(z){
+    ggplot(z, aes(x=date, y=close)) + geom_line() + xlab("Date") + ylab("USD")
+}
+
+tsplot(BNB)
+tsplot(BTC)
+tsplot(ETH)
+tsplot(LTC)
+
+#Decomposing the series to check for seasonality and trend
+dcompose <- function(x){
+plot(decompose(ts(x$close, start=c(1,1), frequency = 52.1429)))
+}
+
+dcompose(BNB)
+dcompose(BTC)
+dcompose(ETH)
+dcompose(LTC)
 
 #Checking the order of integration of the individual series
-arBNB <- auto.arima(BNB$close, max.q=0)
-arBTC <- auto.arima(BTC$close, max.q=0)
-arETH <- auto.arima(ETH$close, max.q=0)
-arLTC <- auto.arima(LTC$close, max.q=0)
-
-#Detrending the series to check for seasonality and trend
-dc_BNB <- decompose(ts(BNB$close, start=c(1,1), frequency = 52.1429))
-plot(dc_BNB)
-dc_BTC <- decompose(ts(BTC$close, start=c(1,1), frequency = 52.1429))
-plot(dc_BTC)
+auto.arima(BNB$close, max.q=0)
+auto.arima(BTC$close, max.q=0)
+auto.arima(ETH$close, max.q=0)
+auto.arima(LTC$close, max.q=0)
 
 #Q-Q plots
-qqnorm(BNB$close, pch = 1, frame = FALSE)
-qqline(BNB$close, col = "steelblue", lwd = 2)
+fuck <- auto.arima(BNB[1:9000, ]$close, max.q=0)
+qqnorm(fuck, pch = 1, frame = FALSE)
+qqline(fuck, col = "steelblue", lwd = 2)
 
 #Adf test to find order of lag
-summary(ur.df(BNB$close))
-summary(ur.df(BTC$close))
-summary(ur.df(ETH$close))
-summary(ur.df(LTC$close))
+summary(ur.df(BNB[1:9000, ]$close))
+summary(ur.df(BTC[1:9000, ]$close))
+summary(ur.df(ETH[1:9000, ]$close))
+summary(ur.df(LTC[1:9000, ]$close))
 
 #Check for trend maybe idk (R^2_{adj}). Maybe after Johansen?
 ...
@@ -85,62 +75,154 @@ summary(ur.df(LTC$close))
 ...
 
 #Create a trend variable
-trend <- seq_along(BNB)
+trend <- seq_along(BNB$close)
 
 #Select value of p
-VARselect(data.frame(BNB$close, BTC$close, ETH$close, LTC$close))
+all_coins <- data.frame(BNB$close, BTC$close, ETH$close, LTC$close)
+VARselect(all_coins)
 
 #Johansen cointegration method
-johansen <- ca.jo(data.frame((BNB$close), (BTC$close), (ETH$close), (LTC$close)), 
-                  type="trace", K=2, ecdet="trend", spec="longrun")
+johansen <- ca.jo(all_coins[1:8800,], type="eigen", K=2, 
+                  ecdet="trend", spec="longrun")
 summary(johansen)
 
+plot_residuals <- function(z){
+  fuck <- johansen@R0[,z]
+  if (z == 1){
+    newdf_BNB_n <- data.frame(fuck, BNB[1:8798,]$date)
+    print(ggplot(newdf_BNB_n, aes(x=BNB.1.8798....date, y=fuck)) + geom_line() + xlab("") + ylab("") + ggtitle("Binance residuals"))
+  }
+  if (z == 2){
+    newdf_BNB_n <- data.frame(fuck, BTC[1:8798,]$date)
+    print(ggplot(newdf_BNB_n, aes(x=BTC.1.8798....date, y=fuck)) + geom_line() + xlab("") + ylab("") + ggtitle("Bitcoin residuals"))
+  }
+  if (z == 3){
+    newdf_BNB_n <- data.frame(fuck, ETH[1:8798,]$date)
+    print(ggplot(newdf_BNB_n, aes(x=ETH.1.8798....date, y=fuck)) + geom_line() + xlab("") + ylab("") + ggtitle("Etherium residuals"))
+  }
+  if (z == 4){
+    newdf_BNB_n <- data.frame(fuck, LTC[1:8998,]$date)
+    print(ggplot(newdf_BNB_n, aes(x=LTC.1.8798....date, y=fuck)) + geom_line() + xlab("") + ylab("") + ggtitle("Litecoin residuals"))
+  }
+}
+
+plot_residuals(1)
+
+plot_qq <- function(z){
+qqnorm(johansen@R0[,z], pch = 1, frame = FALSE) 
+qqline(johansen@R0[,z], col = "steelblue", lwd = 2)
+}
+
+plot_qq(1)
+
+plot(density(fuck, width = 100))
+#Try some shit, så vi ikke behøver ctrl c + ctrl v hvert tal
+#Aka linear combinations wrt. cointegration vector
+finalplots <- function(z, ecdet){
+  if (ecdet == "none"){
+    wtf <- BNB$close - johansen@V[2, z]*BTC$close + johansen@V[3, z]*ETH$close + johansen@V[4, z]*LTC$close
+  }
+  if (ecdet == "trend"){
+    wtf <- BNB$close - johansen@V[2, z]*BTC$close + johansen@V[3, z]*ETH$close + johansen@V[4, z]*LTC$close + johansen@V[5, z]*trend
+  }
+  newdf_BNB <- data.frame(wtf, BNB$date)[9001:11000, ]
+  ggplot(newdf_BNB_n, aes(x=BNB.date, y=wtf)) + geom_line() + ggtitle("Binance differenced-ish")
+}
+
+finalplots_dt <- function(z, ecdet){
+  if (ecdet == "none"){
+    wtf <- BNB$close - johansen@V[2, z]*BTC$close + johansen@V[3, z]*ETH$close + johansen@V[4, z]*LTC$close
+  }
+  if (ecdet == "trend"){
+    wtf <- BNB$close - johansen@V[2, z]*BTC$close + johansen@V[3, z]*ETH$close + johansen@V[4, z]*LTC$close + johansen@V[5, z]*trend
+  }
+  wtf_dt <- detrend(wtf)
+  newdf_BNB_n <- data.frame(wtf_dt, BNB$date)[9001:11000, ]
+  ggplot(newdf_BNB_n, aes(x=BNB.date, y=wtf_dt)) + geom_line() + ggtitle("Detrended Binance differenced-ish")
+}
+
+finalplots(1, ecdet = "trend")
+
+finalplots_dt(1, ecdet = "trend")
 #Construct VECM to determine strategy??
-...
+library(tsDyn)
+est_tsdyn <- VECM(all_coins, 2, r = 1, include = "none", estim = "ML", exogen = trend)
+summary(est_tsdyn)
 
-#Check the cointegration relationships.
-#Binance Coin
-Coint_BNB <- (BNB$close)-(- 0.02899906*(BTC$close) + 0.30624763*(ETH$close) + 5.33532556*(LTC$close) - 0.11097319*trend)
+#Impulse response analysis
+var <- vec2var(johansen, r = 1)
+#Irf for BNB
+ir <- irf(var, n.ahead = 20, impulse = "BNB.close", response = "BTC.close", ortho = FALSE, runs = 50)
+ir <- irf(var, n.ahead = 20, impulse = "BNB.close", response = "ETH.close", ortho = FALSE, runs = 50)
+ir <- irf(var, n.ahead = 20, impulse = "BNB.close", response = "LTC.close", ortho = FALSE, runs = 500)
+#Irf for BTC
+ir <- irf(var, n.ahead = 20, impulse = "BTC.close", response = "BNB.close", ortho = FALSE, runs = 50)
+ir <- irf(var, n.ahead = 20, impulse = "BTC.close", response = "ETH.close", ortho = FALSE, runs = 50)
+ir <- irf(var, n.ahead = 20, impulse = "BTC.close", response = "LTC.close", ortho = FALSE, runs = 50)
+#Irf for ETH
+ir <- irf(var, n.ahead = 20, impulse = "ETH.close", response = "BNB.close", ortho = FALSE, runs = 50)
+ir <- irf(var, n.ahead = 20, impulse = "ETH.close", response = "BTC.close", ortho = FALSE, runs = 50)
+ir <- irf(var, n.ahead = 20, impulse = "ETH.close", response = "LTC.close", ortho = FALSE, runs = 50)
+#Irf for LTC
+ir <- irf(var, n.ahead = 20, impulse = "LTC.close", response = "BNB.close", ortho = FALSE, runs = 50)
+ir <- irf(var, n.ahead = 20, impulse = "LTC.close", response = "BTC.close", ortho = FALSE, runs = 50)
+ir <- irf(var, n.ahead = 20, impulse = "LTC.close", response = "ETH.close", ortho = FALSE, runs = 50)
 
-newdf_BNB <- data.frame(Coint_BNB, BNB$date)
+plot(ir)
+
+
+#First linear combination without trend
+Coint_BNB_n <- BNB$close - johansen@V[2, 1]*BTC$close + johansen@V[3, 1]*ETH$close + johansen@V[4, 1]*LTC$close
+newdf_BNB_n <- data.frame(Coint_BNB_n, BNB$date)[9001:11000, ]
+ggplot(newdf_BNB_n, aes(x=BNB.date, y=Coint_BNB_n)) + geom_line() + ggtitle("Binance Coin-ish")
+
+detrended_coint_BNB_n <- detrend(Coint_BNB_n)
+newdf_BNB_n <- data.frame(detrended_coint_BNB_n, BNB$date)[9001:11000, ]
+ggplot(newdf_BNB_n, aes(x=BNB.date, y=detrended_coint_BNB_n)) + geom_line() + ggtitle("Detrended Binance Coin-ish")
+
+summary(ur.df(detrended_coint_BNB_n))
+
+#First linear combination with trend
+Coint_BNB <- (BNB$close)-(- 0.1943329*(BTC$close) - 0.8997849*(ETH$close) + 46.8879068*(LTC$close) + 0.2883075*trend)
+newdf_BNB <- data.frame(Coint_BNB, BNB$date)[9001:11000, ]
 ggplot(newdf_BNB, aes(x=BNB.date, y=Coint_BNB)) + geom_line() + ggtitle("Binance Coin-ish")
 
 detrended_coint_BNB <- detrend(Coint_BNB)
-newdf_BNB <- data.frame(detrended_coint_BNB, BNB$date)
+newdf_BNB <- data.frame(detrended_coint_BNB, BNB$date)[9001:11000, ]
 ggplot(newdf_BNB, aes(x=BNB.date, y=detrended_coint_BNB)) + geom_line() + ggtitle("Detrended Binance Coin-ish")
 
 summary(ur.df(detrended_coint_BNB))
 
-#Bitcoin
-Coint_BTC <- (BTC$close) - (74.8828644792*(BNB$close) - 74.8828644792*0.01904117*(ETH$close) - 74.8828644792*3.03633913*(LTC$close) - 74.8828644792*0.05657007*trend)
+#Second linear combination without trend
+Coint_BTC_n <- (BNB$close) - (+ 0.006208809*(BTC$close) - 0.155704826*(ETH$close) - 1.096283069*(LTC$close))
+newdf_BTC_n <- data.frame(Coint_BTC_n, BTC$date)[9001:11000, ]
+ggplot(newdf_BTC_n, aes(x=BTC.date, y=Coint_BTC_n)) + geom_line() + ggtitle("Bitcoin-ish")
 
-newdf_BTC <- data.frame(Coint_BTC, BTC$date)
-ggplot(newdf_BTC, aes(x=BTC.date, y=Coint_BTC)) + geom_line() + ggtitle("Bitcoin-ish")
+detrended_coint_BTC_n <- detrend(Coint_BTC_n)
+newdf_BTC_n <- data.frame(detrended_coint_BTC_n, BTC$date)[9001:11000, ]
+ggplot(newdf_BTC_n, aes(x=BTC.date, y=detrended_coint_BTC_n)) + geom_line() + ggtitle("Detrended Bitcoin-ish")
 
-detrended_coint_BTC <- detrend(Coint_BTC)
-newdf_BTC <- data.frame(detrended_coint_BTC, BTC$date)
-ggplot(newdf_BTC, aes(x=BTC.date, y=detrended_coint_BTC)) + geom_line() + ggtitle("Detrended Bitcoin-ish")
+summary(ur.df(detrended_coint_BTC_n))
 
-summary(ur.df(detrended_coint_BTC))
+#Third linear combination without trend
+Coint_ETH_n <- (BNB$close) - (- 0.003601332*(BTC$close) - 0.038975259*(ETH$close) - 1.976053994*(LTC$close))
+newdf_ETH_n <- data.frame(Coint_ETH_n, ETH$date)[9001:11000, ]
+ggplot(newdf_ETH_n, aes(x=ETH.date, y=Coint_ETH_n)) + geom_line() + ggtitle("Etherium-ish")
 
-#Etherium
-Coint_ETH <- (ETH$close) - (-3.7150307085*(BNB$close) + 3.7150307085*0.005361963*(BTC$close) - 3.7150307085*0.516022721*(LTC$close) - 3.7150307085*0.071618578*trend)
-newdf_ETH <- data.frame(Coint_ETH, ETH$date)
-ggplot(newdf_ETH, aes(x=ETH.date, y=Coint_ETH))+ geom_line() + ggtitle("Detrended Etherium-ish")
+detrended_coint_ETH_n <- detrend(Coint_ETH_n)
+newdf_ETH_n <- data.frame(detrended_coint_ETH_n, ETH$date)[9001:11000, ]
+ggplot(newdf_ETH_n, aes(x=ETH.date, y=detrended_coint_ETH_n)) + geom_line() + ggtitle("Detrended Etherium")
 
-detrended_coint_ETH <- detrend(Coint_ETH)
-newdf_ETH <- data.frame(detrended_coint_ETH, ETH$date)
-ggplot(newdf_ETH, aes(x=ETH.date, y=detrended_coint_ETH)) + geom_line() + ggtitle("Detrended Etherium")
+summary(ur.df(detrended_coint_ETH_n))
 
-summary(ur.df(detrended_coint_ETH))
+#Third linear combination without trend
+Coint_LTC_n <- (BNB$close) - (- 0.00824494*(BTC$close) - 0.77375033*(ETH$close) + 6.83330601*(LTC$close))
+newdf_LTC_n <- data.frame(Coint_LTC_n, LTC$date)[9001:11000, ]
+ggplot(newdf_LTC_n, aes(x=LTC.date, y=Coint_LTC_n)) + geom_line() + ggtitle("Litecoin-ish")
 
-#Litecoin
-Coint_LTC <- (LTC$close) - (-0.28037780999*(BNB$close) + 0.00330521*0.28037780999*(BTC$close) - 0.12893916*0.28037780999*(ETH$close) + 0.05881550*0.28037780999*trend)
-newdf_LTC <- data.frame(Coint_LTC, LTC$date)
-ggplot(newdf_LTC, aes(x=LTC.date, y=Coint_LTC)) + geom_line() + ggtitle("Litecoin-ish")
-
-detrended_coint_LTC <- detrend(Coint_LTC)
-newdf_LTC <- data.frame(detrended_coint_LTC, LTC$date)
-ggplot(newdf_LTC, aes(x=LTC.date, y=detrended_coint_LTC)) + geom_line() + ggtitle("Detrended Litecoin-ish")
+detrended_coint_LTC_n <- detrend(Coint_LTC_n)
+newdf_LTC_n <- data.frame(detrended_coint_LTC_n, LTC$date)[9001:11000, ]
+ggplot(newdf_LTC_n, aes(x=LTC.date, y=detrended_coint_LTC_n)) + geom_line() + ggtitle("Detrended Litecoin-ish")
 
 summary(ur.df(detrended_coint_LTC))
+
