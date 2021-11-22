@@ -1,6 +1,6 @@
 #Load packages
 pacman::p_load(readr, tseries, urca, ggplot2, dplyr, lubridate, forecast,
-               pracma, vars, stats, tsDyn)
+               pracma, vars, stats, tsDyn, ggpubr)
 
 #Define the data
 #Order the data by dates such that they are in ascending order
@@ -36,11 +36,12 @@ tsplot <- function(z){
     ggplot(z, aes(x=date, y=close)) + geom_line() + xlab("Date") + ylab("USD")
 }
 
-tsplot(BNB)
-tsplot(BTC)
-tsplot(ETH)
-tsplot(LTC)
+tsbnb <- tsplot(BNB)
+tsbtc <- tsplot(BTC)
+tseth <- tsplot(ETH)
+tsltc <- tsplot(LTC)
 
+ggarrange(tsbnb, tsbtc, tseth, tsltc, ncol = 2, nrow = 2)
 #Decomposing the series to check for seasonality and trend
 dcompose <- function(x){
 plot(decompose(ts(x$close, start=c(1,1), frequency = 52.1429)))
@@ -82,7 +83,7 @@ all_coins <- data.frame(BNB$close, BTC$close, ETH$close, LTC$close)
 VARselect(all_coins)
 
 #Johansen cointegration method
-johansen <- ca.jo(all_coins, type="trace", K=2, 
+johansen <- ca.jo(all_coins, type="eigen", K=2, 
                   ecdet="trend", spec="longrun")
 summary(johansen)
 #data.frame(johansen@ZK[,1]*johansen@V[1,1], johansen@ZK[,2]*johansen@V[2,1], 
@@ -132,13 +133,13 @@ finalplots <- function(z, ecdet){
   }
   newdf_BNB <- data.frame(wtf, BNB[3:11000,]$date)
   if (z == 1)
-    p <- ggplot(newdf_BNB, aes(x=newdf_BNB[,2], y=wtf)) + xlab("") + ylab("") + geom_line() + ggtitle("Binance Coin")
+    p <- ggplot(newdf_BNB, aes(x=newdf_BNB[,2], y=wtf)) + xlab("") + ylab("") + geom_line() + ggtitle("First linear combination")
   if (z == 2)
-    p <- ggplot(newdf_BNB, aes(x=newdf_BNB[,2], y=wtf)) + xlab("") + ylab("") + geom_line() + ggtitle("Bitcoin")
+    p <- ggplot(newdf_BNB, aes(x=newdf_BNB[,2], y=wtf)) + xlab("") + ylab("") + geom_line() + ggtitle("Second linear combination")
   if (z == 3)
-    p <- ggplot(newdf_BNB, aes(x=newdf_BNB[,2], y=wtf)) + xlab("") + ylab("") + geom_line() + ggtitle("Etherium")
+    p <- ggplot(newdf_BNB, aes(x=newdf_BNB[,2], y=wtf)) + xlab("") + ylab("") + geom_line() + ggtitle("Third linear combination")
   if (z == 4)
-    p <- ggplot(newdf_BNB, aes(x=newdf_BNB[,2], y=wtf)) + xlab("") + ylab("") + geom_line() + ggtitle("Litecoin")
+    p <- ggplot(newdf_BNB, aes(x=newdf_BNB[,2], y=wtf)) + xlab("") + ylab("") + geom_line() + ggtitle("Fourth linear combination")
   return(p)
 }
 
@@ -152,13 +153,13 @@ finalplots_dt <- function(z, ecdet){
   wtf_dt <- detrend(wtf)
   newdf_BNB_n <- data.frame(wtf_dt, BNB[3:11000,]$date)
   if (z == 1)
-    p <- ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=wtf_dt)) + xlab("") + ylab("") + geom_line() + ggtitle("Binance Coin")
+    p <- ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=wtf_dt)) + xlab("") + ylab("") + geom_line() + ggtitle("First linear combination")
   if (z == 2)
-    p <- ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=wtf_dt)) + xlab("") + ylab("") + geom_line() + ggtitle("Bitcoin")
+    p <- ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=wtf_dt)) + xlab("") + ylab("") + geom_line() + ggtitle("Second linear combination")
   if (z == 3)
-    p <- ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=wtf_dt)) + xlab("") + ylab("") + geom_line() + ggtitle("Etherium")
+    p <- ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=wtf_dt)) + xlab("") + ylab("") + geom_line() + ggtitle("Third linear combination")
   if (z == 4)
-    p <- ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=wtf_dt)) + xlab("") + ylab("") + geom_line() + ggtitle("Litecoin")
+    p <- ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=wtf_dt)) + xlab("") + ylab("") + geom_line() + ggtitle("Fourth linear combination")
   return(p)
 }
 
@@ -177,13 +178,13 @@ finalplots_res <- function(z, ecdet){
   }
   newdf_BNB <- data.frame(wtf, BNB[3:11000,]$date)
   if (z == 1)
-    p <- ggplot(newdf_BNB, aes(x=newdf_BNB[,2], y=wtf)) + xlab("") + ylab("") + geom_line() + ggtitle("Binance Coin")
+    p <- ggplot(newdf_BNB, aes(x=newdf_BNB[,2], y=wtf)) + xlab("") + ylab("") + geom_line() + ggtitle("First linear combination")
   if (z == 2)
-    p <- ggplot(newdf_BNB, aes(x=newdf_BNB[,2], y=wtf)) + xlab("") + ylab("") + geom_line() + ggtitle("Bitcoin")
+    p <- ggplot(newdf_BNB, aes(x=newdf_BNB[,2], y=wtf)) + xlab("") + ylab("") + geom_line() + ggtitle("Second linear combination")
   if (z == 3)
-    p <- ggplot(newdf_BNB, aes(x=newdf_BNB[,2], y=wtf)) + xlab("") + ylab("") + geom_line() + ggtitle("Etherium")
+    p <- ggplot(newdf_BNB, aes(x=newdf_BNB[,2], y=wtf)) + xlab("") + ylab("") + geom_line() + ggtitle("Third linear combination")
   if (z == 4)
-    p <- ggplot(newdf_BNB, aes(x=newdf_BNB[,2], y=wtf)) + xlab("") + ylab("") + geom_line() + ggtitle("Litecoin")
+    p <- ggplot(newdf_BNB, aes(x=newdf_BNB[,2], y=wtf)) + xlab("") + ylab("") + geom_line() + ggtitle("Fourth linear combination")
   return(p)
 }
 
@@ -197,13 +198,13 @@ finalplots_res_dt <- function(z, ecdet){
   wtf_dt <- detrend(wtf)
   newdf_BNB_n <- data.frame(wtf_dt, BNB[3:11000,]$date)
   if (z == 1)
-    p <- ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=wtf_dt)) + xlab("") + ylab("") + geom_line() + ggtitle("Binance Coin")
+    p <- ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=wtf_dt)) + xlab("") + ylab("") + geom_line() + ggtitle("First linear combination")
   if (z == 2)
-    p <- ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=wtf_dt)) + xlab("") + ylab("") + geom_line() + ggtitle("Bitcoin")
+    p <- ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=wtf_dt)) + xlab("") + ylab("") + geom_line() + ggtitle("Second linear combination")
   if (z == 3)
-    p <- ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=wtf_dt)) + xlab("") + ylab("") + geom_line() + ggtitle("Etherium")
+    p <- ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=wtf_dt)) + xlab("") + ylab("") + geom_line() + ggtitle("Third linear combination")
   if (z == 4)
-    p <- ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=wtf_dt)) + xlab("") + ylab("") + geom_line() + ggtitle("Litecoin")
+    p <- ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=wtf_dt)) + xlab("") + ylab("") + geom_line() + ggtitle("Fourth linear combination")
   return(p)
 }
 
