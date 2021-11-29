@@ -147,7 +147,9 @@ list.of <- list(BNB,BTC,ETH,LTC)
 #list.of <- list(BNB,BTC,ETH,EOS,ETC,LINK)
 #list.of <- list(BNB.train,BTC.train,ETH.train,BTT.train,CELR.train,DASH.train,EOS.train,ETC.train,LINK.train)
 #This function takes the training data and uses to find Johansen and then the linear combination.
-make.comb <- function(list.of,which){
+#list.of = list.of,which = 1, type="trend"
+
+make.comb <- function(list.of = list.of,which = 1,trend=T,res=F){
   save.info <- list.of[[1]]$close
   for(i in 2:length(list.of)){
     save.info <- cbind(save.info,list.of[[i]]$close)
@@ -158,22 +160,28 @@ make.comb <- function(list.of,which){
     print("lag changed")
   }
   print(VARselect(save.info, type = "trend",lag.max=20)$selection[3])
-  johansen <- ca.jo(save.info, type="trace", K=lag.select, ecdet="trend", spec="longrun")
-  Coint <- numeric(length(list.of[[1]]$close))[-c(1:lag.select)]
-  for(j in 1:length(list.of)){
-    Coint <- Coint+ johansen@RK[,j]*johansen@V[j,which]
+  johansen <- ca.jo(save.info, type="eigen", K=lag.select, ecdet="trend", spec="longrun")
+  Coint <- numeric(length(list.of[[1]]$close)-lag.select)
+  length.fun <- length(list.of)
+  vec.ts <- johansen@ZK
+  if(trend==T){
+    length.fun <- length.fun+1
   }
-  print(length(johansen@ZK[,j]))
-  print(length(list.of[[1]]$close))
+  if(res==T){
+    vec.ts <- johansen@RK
+  }
+  for(j in 1:length.fun){
+    Coint <- Coint + johansen@ZK[,j]*johansen@V[j,which]
+  }
   together <- data.frame(Coint, list.of[[1]]$date[-c(1:lag.select)])
-  p <- ggplot(together, aes(x=together[,2], y=together[,1])) + geom_line() + ggtitle("")
+  p <- ggplot(together, aes(x=together[,2], y=together[,1])) + geom_line() + labs(y="Value", x = "Date",title="Cointegration something for..")
   print(p)
-  DF <- adf.test(Coint)
+  DF <- summary(ur.df(Coint))
   everything <- list(Coint,johansen,p,DF,together)
   return(everything)
 }
-try <- make.comb(list.of,1)
-
+try <- make.comb(list.of,2,trend=T,res=F)
+try[[4]]
 
 
 
