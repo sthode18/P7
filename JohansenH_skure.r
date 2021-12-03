@@ -147,18 +147,15 @@ j_ETH_LTC <- ca.jo(data.frame(ETH$close, LTC$close), type = "trace", K = 3,
                    ecdet = "trend", spec = "longrun")
 summary(j_ETH_LTC)
 
-#data.frame(johansen@ZK[,1]*johansen@V[1,1], johansen@ZK[,2]*johansen@V[2,1], 
-#  johansen@ZK[,3]*johansen@V[3,1], johansen@ZK[,4]*johansen@V[4,1], 
-#  johansen@ZK[,5]*johansen@V[5,1])
-
+#Plotting residuals and their density
 plot_residuals <- function(z, title.gg){
   fuck <- johansen@R0[,z]
     newdf_BNB_n <- data.frame(fuck, BNB[3:11000,]$date)
     return(ggplot(newdf_BNB_n, aes(x=newdf_BNB_n[,2], y=fuck)) + geom_line() + xlab("") + ylab("") + ggtitle(title.gg))
 }
 
-ggarrange(plot_residuals(1), plot_residuals(2), 
-          plot_residuals(3), plot_residuals(4), ncol = 2, nrow = 2)
+ggarrange(plot_residuals(1, "Binance Coin Residuals"), plot_residuals(2, "Bitcoin Residuals"), 
+          plot_residuals(3, "Etherium Residuals"), plot_residuals(4, "Litecoin Residuals"), ncol = 2, nrow = 2)
 
 #1=BNB, 2=BTC, 3=ETH, 4=LTC
 
@@ -205,7 +202,7 @@ fp1 <- finalplots(1, ecdet = "yes", "First Linear Combination")
 fp2 <- finalplots(2, ecdet = "yes", "Second Linear Combination")
 fp3 <- finalplots(3, ecdet = "yes", "Third Linear Combination")
 fp4 <- finalplots(4, ecdet = "yes", "Fourth Linear Combination")
-fp1[[1]]
+
 ggarrange(fp1[[1]], fp2[[1]], ncol = 2, nrow = 1)
 
 ggarrange(fp1[[1]], fp2[[1]], fp3[[1]], fp4[[1]], ncol = 2, nrow = 2)
