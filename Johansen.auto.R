@@ -75,8 +75,54 @@ qqplotz <- function(x,johansen,title.gg){
   ggplot(df_stdrs, aes(sample = stdrs)) + stat_qq() + stat_qq_line() +
     labs(x = "Theoretical Quantiles", y = "Sample Quantiles") + ggtitle(title.gg)
 }
+plot.acf <- function(z,johansen, title.gg){
+  bacf <- acf(johansen@R0[,z], plot = FALSE)
+  df_bacf <- with(bacf, data.frame(lag, acf))  
+  
+  ic_alpha= function(alpha, acf_res){
+    return(qnorm((1 + (1 - alpha))/2)/sqrt(acf_res$n))
+  }
+  lim <- ic_alpha(0.01,bacf)
+  
+  for (i in 1:length(df_bacf$acf)){
+    if (df_bacf$acf[i] > 0.19){
+      df_bacf$acf[i] <- 0.19
+    }
+  }
+  acfFuller <- ggplot(data = df_bacf, mapping = aes(x = lag, y = acf)) +
+    geom_hline(aes(yintercept = 0)) +
+    geom_segment(mapping = aes(xend = lag, yend = 0))   +
+    geom_hline(aes(yintercept = lim), linetype = 2, color = 'blue') +
+    geom_hline(aes(yintercept = -lim), linetype = 2, color = 'blue') +
+    labs(x = "Lag", y = "ACF") + ggtitle(title.gg)
+  return(acfFuller)
+}
+plot.the.list <- function(x,title.gg){
+  df <- data.frame(x$close,x$date)
+  p <- ggplot(data=df, aes(x=df[,2],y=df[,1]))+geom_line()+labs(x = "Date", y = "USD") +ggtitle(title.gg)
+  return(p)
+}
 #load.all()
 load.some()
+
+p.BNB <- plot.the.list(BNB,title.gg="Binance Coin");p.BNB
+p.BTC <- plot.the.list(BTC,title.gg="Bitcoin");p.BTC
+p.ETH <- plot.the.list(ETH,title.gg="Ethereum");p.ETH
+p.LTC <- plot.the.list(LTC,title.gg="Litecoin");p.LTC
+
+ggarrange(p.BNB,p.BTC,p.ETH,p.LTC,nrow=2,ncol=2)
+
+#Now we do the same for 9540:11000.
+when <- 9540:11000
+BNB.small <- list(close=BNB$close[when],date=BNB$date[when])
+BTC.small <- list(close=BTC$close[when],date=BTC$date[when])
+ETH.small <- list(close=ETH$close[when],date=ETH$date[when])
+LTC.small <- list(close=LTC$close[when],date=LTC$date[when])
+p.BNB.2 <- plot.the.list(BNB.small,title.gg="Binance Coin");p.BNB.2
+p.BTC.2 <- plot.the.list(BTC.small,title.gg="Bitcoin");p.BTC.2
+p.ETH.2 <- plot.the.list(ETH.small,title.gg="Ethereum");p.ETH.2
+p.LTC.2 <- plot.the.list(LTC.small,title.gg="Litecoin");p.LTC.2
+ggarrange(p.BNB.2,p.BTC.2,p.ETH.2,p.LTC.2,nrow=2,ncol=2)
 
 #Performing no trend test to see if there is a trend or not. (These functions take a long time)
 #LTC.trend_test <- notrend_test(LTC$close)
@@ -107,10 +153,10 @@ BNB.diff <- diff(BNB$close,differences=1)
 BTC.diff <- diff(BTC$close,differences=1)
 ETH.diff <- diff(ETH$close,differences=1)
 #Then finding the time trend - if there is any. (These functions take a long time)
-LTC.trend_test.2 <- notrend_test(LTC.diff)
-BNB.trend_test.2 <- notrend_test(BNB.diff)
-BTC.trend_test.2 <- notrend_test(BTC.diff)
-ETH.trend_test.2 <- notrend_test(ETH.diff)
+#LTC.trend_test.2 <- notrend_test(LTC.diff)
+#BNB.trend_test.2 <- notrend_test(BNB.diff)
+#BTC.trend_test.2 <- notrend_test(BTC.diff)
+#ETH.trend_test.2 <- notrend_test(ETH.diff)
 #Finding the lag
 VARselect(LTC.diff)$selection[3]
 VARselect(BNB.diff)$selection[3]
@@ -142,7 +188,7 @@ BNB.plot <- ggplot(BNB.diff.df,aes(x=index.numbers,y=BNB.diff)) + geom_line()+
 BTC.plot <- ggplot(BTC.diff.df,aes(x=index.numbers,y=BTC.diff)) + geom_line()+
   labs(y="Difference", x = "Index",title="Differenced Bitcoin")+ylim(-4000, 4000)
 ETH.plot <- ggplot(ETH.diff.df,aes(x=index.numbers,y=ETH.diff)) + geom_line()+
-  labs(y="Difference", x = "Index",title="Differenced Etherium")+ylim(-450, 450)
+  labs(y="Difference", x = "Index",title="Differenced Ethereum")+ylim(-450, 450)
 
 ggarrange(BNB.plot, BTC.plot,ETH.plot, LTC.plot,
           ncol = 2, nrow = 2) #3.75*5.2
@@ -178,7 +224,7 @@ make.comb <- function(list.of = list.of,lin.comb.numb = 1,res=F,type.jo="trace",
     length.fun <- length.fun+1
   }
   if(res==T){
-    vec.ts <- johansen@RK
+    vec.ts <- johansen@R0[,lin.comb.numb]
   }
   for(j in 1:length.fun){
     Coint <- Coint + vec.ts[,j]*johansen@V[j,lin.comb.numb]
@@ -244,6 +290,27 @@ summary(ur.df(coint.all.eigen.res.1[[1]],type="none"))
 summary(ur.df(coint.all.eigen.res.2[[1]],type="none"))
 
 #Creating qq-plots. with eigen
+coint.all.eigen.1.qq <- qqplotz(x=1,johansen=coint.all.eigen.1[[2]],title.gg='Binance Coin');coint.all.eigen.1.qq
+coint.all.eigen.2.qq <- qqplotz(x=1,johansen=coint.all.eigen.2[[2]],title.gg='Bitcoin');coint.all.eigen.2.qq
+coint.all.eigen.3.qq <- qqplotz(x=1,johansen=coint.all.eigen.3[[2]],title.gg='Ethereum');coint.all.eigen.3.qq
+coint.all.eigen.4.qq <- qqplotz(x=1,johansen=coint.all.eigen.4[[2]],title.gg='Litecoin');coint.all.eigen.4.qq
+
+ggarrange(coint.all.eigen.1,coint.all.eigen.2,coint.all.eigen.3,coint.all.eigen.4,nrow=2,ncol=2)
+
+#Creating ACF plots, with eigen
+coint.all.eigen.1.ACF <- plot.acf(z=1,johansen=coint.all.eigen.1[[2]],title.gg='Binance Coin');coint.all.eigen.1
+coint.all.eigen.2.ACF <- plot.acf(z=1,johansen=coint.all.eigen.2[[2]],title.gg='Bitcoin');coint.all.eigen.2
+coint.all.eigen.3.ACF <- plot.acf(z=1,johansen=coint.all.eigen.3[[2]],title.gg='Ethereum');coint.all.eigen.3
+coint.all.eigen.4.ACF <- plot.acf(z=1,johansen=coint.all.eigen.4[[2]],title.gg='Litecoin');coint.all.eigen.4
+
+ggarrange(coint.all.eigen.1.ACF,coint.all.eigen.2.ACF,coint.all.eigen.3.ACF,coint.all.eigen.4.ACF,nrow=2,ncol=2)
+
+#Plotting the residuals over time
+coint.all.eigen.1.res <- make.comb(all.crypto,lin.comb.numb=1,res=T,type.jo="eigen",ecdet="trend",title.gg="First Linear Combination")
+coint.all.eigen.2.res
+coint.all.eigen.3.res
+coint.all.eigen.4.res
+
 
 #Making the lists.
 y1 <- list(BNB,BTC)
@@ -254,26 +321,20 @@ y5 <- list(BTC,LTC)
 y6 <- list(ETH,LTC)
 
 #Testing for coint with eigen
-y1.coint.eigen <- make.comb(y1,1,res=F,type.jo="eigen",title.gg = TeX('$\\hat{\\mathbf{\\beta}}_{1,1}^T\\mathbf{y}_{1,p}$'),title.gg.size=22)
+y1.coint.eigen <- make.comb(y1,1,res=F,type.jo="eigen",title.gg = TeX('$\\mathbf{y}_{1,t}$, First Linear Combination'),title.gg.size=18)
 summary(y1.coint.eigen[[2]])
-y2.coint.eigen <- make.comb(y2,1,res=F,type.jo="eigen",title.gg = TeX('$\\hat{\\mathbf{\\beta}}_{1,1}^T\\mathbf{y}_{2,p}$'))
+y2.coint.eigen <- make.comb(y2,1,res=F,type.jo="eigen",title.gg = TeX('$\\hat{\\mathbf{\\beta}}_{1,1}^T\\mathbf{y}_{2,t}$'))
 summary(y2.coint.eigen[[2]])
-y3.coint.eigen <- make.comb(y3,1,res=F,type.jo="eigen",title.gg = TeX('$\\hat{\\mathbf{\\beta}}_{1,1}^T\\mathbf{y}_{3,p}$'))
+y3.coint.eigen <- make.comb(y3,1,res=F,type.jo="eigen",title.gg = TeX('$\\hat{\\mathbf{\\beta}}_{1,1}^T\\mathbf{y}_{3,t}$'))
 summary(y3.coint.eigen[[2]])
-y4.coint.eigen <- make.comb(y4,1,res=F,type.jo="eigen",title.gg = TeX('$\\hat{\\mathbf{\\beta}}_{1,1}^T\\mathbf{y}_{4,p}$'),title.gg.size=22)
+y4.coint.eigen <- make.comb(y4,1,res=F,type.jo="eigen",title.gg = TeX('$\\mathbf{y}_{4,t}$, First Linear Combination'),title.gg.size=18)
 summary(y4.coint.eigen[[2]])
-y5.coint.eigen <- make.comb(y5,1,res=F,type.jo="eigen",title.gg = TeX('$\\hat{\\mathbf{\\beta}}_{1,1}^T\\mathbf{y}_{5,p}$'),title.gg.size=22)
+y5.coint.eigen <- make.comb(y5,1,res=F,type.jo="eigen",title.gg = TeX('$\\mathbf{y}_{5,t}$, First Linear Combination'),title.gg.size=18)
 summary(y5.coint.eigen[[2]])
-y6.coint.eigen <- make.comb(y6,1,res=F,type.jo="eigen",title.gg = TeX('$\\hat{\\mathbf{\\beta}}_{1,1}^T\\mathbf{y}_{6,p}$'))
+y6.coint.eigen <- make.comb(y6,1,res=F,type.jo="eigen",title.gg = TeX('$\\hat{\\mathbf{\\beta}}_{1,1}^T\\mathbf{y}_{6,t}$'))
 summary(y6.coint.eigen[[2]])
 
-
-#Plot the three important ones in the same plot:
-p1 <- y1.coint.eigen[[3]]
-p2 <- y4.coint.eigen[[3]]
-p3 <- y5.coint.eigen[[3]]
-
-ggarrange(p1,p2,p3,ncol=3,nrow=1)
+ggarrange(y1.coint.eigen[[3]],y4.coint.eigen[[3]],y5.coint.eigen[[3]],ncol=3,nrow=1)
 
 #Testing for trend with eigen
 #y1.coint.eigen.trend <- notrend_test(y1.coint.eigen[[1]])
@@ -291,18 +352,44 @@ y4.coint.eigen.df <- summary(ur.df(y4.coint.eigen[[1]])); y4.coint.eigen.df
 y5.coint.eigen.df <- summary(ur.df(y5.coint.eigen[[1]])); y5.coint.eigen.df 
 y6.coint.eigen.df <- summary(ur.df(y6.coint.eigen[[1]])); y6.coint.eigen.df
 
-#Create qq plotfor y1,y5,y6.
-qqplotz(x,johansen,title.gg)
-y1.coint.eigen.qq.1 <- qqplotz(x=1,johansen=y1.coint.eigen[[2]],title.gg=TeX('$\\mathbf{y}_{1,p}$, Binance Coin'));y1.coint.eigen.qq.1
-y1.coint.eigen.qq.2 <- qqplotz(x=2,johansen=y1.coint.eigen[[2]],title.gg=TeX('$\\mathbf{y}_{1,p}$, Bitcoin'));y1.coint.eigen.qq.2
+#Create qq plotfor y1,y4,y5.
+y1.coint.eigen.qq.1 <- qqplotz(x=1,johansen=y1.coint.eigen[[2]],title.gg=TeX('$\\mathbf{y}_{1,t}$, Binance Coin'));y1.coint.eigen.qq.1
+y1.coint.eigen.qq.2 <- qqplotz(x=2,johansen=y1.coint.eigen[[2]],title.gg=TeX('$\\mathbf{y}_{1,t}$, Bitcoin'));y1.coint.eigen.qq.2
 
-y4.coint.eigen.qq.1 <- qqplotz(x=1,johansen=y4.coint.eigen[[2]],title.gg=TeX('$\\mathbf{y}_{4,p}$, Bitcoin'));y4.coint.eigen.qq.1
-y4.coint.eigen.qq.2 <- qqplotz(x=2,johansen=y4.coint.eigen[[2]],title.gg=TeX('$\\mathbf{y}_{4,p}$, Etherium'));y4.coint.eigen.qq.2
+y4.coint.eigen.qq.1 <- qqplotz(x=1,johansen=y4.coint.eigen[[2]],title.gg=TeX('$\\mathbf{y}_{4,t}$, Bitcoin'));y4.coint.eigen.qq.1
+y4.coint.eigen.qq.2 <- qqplotz(x=2,johansen=y4.coint.eigen[[2]],title.gg=TeX('$\\mathbf{y}_{4,t}$, Ethereum'));y4.coint.eigen.qq.2
 
-y5.coint.eigen.qq.1 <- qqplotz(x=1,johansen=y5.coint.eigen[[2]],title.gg=TeX('$\\mathbf{y}_{5,p}$, Bitcoin'));y5.coint.eigen.qq.1
-y5.coint.eigen.qq.2 <- qqplotz(x=2,johansen=y5.coint.eigen[[2]],title.gg=TeX('$\\mathbf{y}_{5,p}$, Litecoin'));y5.coint.eigen.qq.2
+y5.coint.eigen.qq.1 <- qqplotz(x=1,johansen=y5.coint.eigen[[2]],title.gg=TeX('$\\mathbf{y}_{5,t}$, Bitcoin'));y5.coint.eigen.qq.1
+y5.coint.eigen.qq.2 <- qqplotz(x=2,johansen=y5.coint.eigen[[2]],title.gg=TeX('$\\mathbf{y}_{5,t}$, Litecoin'));y5.coint.eigen.qq.2
 
 ggarrange(y1.coint.eigen.qq.1,y4.coint.eigen.qq.1,y5.coint.eigen.qq.1,y1.coint.eigen.qq.2,y4.coint.eigen.qq.2,y5.coint.eigen.qq.2, ncol=3,nrow=2)
+
+#Create ACF plot for y1,y4,y5
+y1.coint.eigen.acf.1 <- plot.acf(z=1,johansen=y1.coint.eigen[[2]],title.gg=TeX('$\\mathbf{y}_{1,t}$, Binance Coin'));y1.coint.eigen.acf.1
+y1.coint.eigen.acf.2 <- plot.acf(z=2,johansen=y1.coint.eigen[[2]],title.gg=TeX('$\\mathbf{y}_{1,t}$, Bitcoin'));y1.coint.eigen.acf.2
+
+y4.coint.eigen.acf.1 <- plot.acf(z=1,johansen=y4.coint.eigen[[2]],title.gg=TeX('$\\mathbf{y}_{4,t}$, Bitcoin'));y4.coint.eigen.acf.1
+y4.coint.eigen.acf.2 <- plot.acf(z=2,johansen=y4.coint.eigen[[2]],title.gg=TeX('$\\mathbf{y}_{4,t}$, Ethereum'));y4.coint.eigen.acf.2
+
+y5.coint.eigen.acf.1 <- plot.acf(z=1,johansen=y5.coint.eigen[[2]],title.gg=TeX('$\\mathbf{y}_{5,t}$, Bitcoin'));y5.coint.eigen.acf.1
+y5.coint.eigen.acf.2 <- plot.acf(z=2,johansen=y5.coint.eigen[[2]],title.gg=TeX('$\\mathbf{y}_{5,t}$, Litecoin'));y5.coint.eigen.acf.2
+
+ggarrange(y1.coint.eigen.acf.1,y4.coint.eigen.acf.1,y5.coint.eigen.acf.1,y1.coint.eigen.acf.2,y4.coint.eigen.acf.2,y5.coint.eigen.acf.2, ncol=3,nrow=2)
+
+#Residuals plots for y1,y4,y5
+
+#Density of residuals plot for y1,y4,y5
+plot_density
+y1.coint.eigen.den.1 <- plot_density(y1.coint.eigen[[2]],title.gg=TeX('$\\mathbf{y}_{1,t}$, Binance Coin'))
+y1.coint.eigen.den.2 <- plot_density(z=2,johansen=y1.coint.eigen[[2]],title.gg=TeX('$\\mathbf{y}_{1,t}$, Bitcoin'))
+
+y4.coint.eigen.den.1 <- plot_density(z=1,johansen=y4.coint.eigen[[2]],title.gg=TeX('$\\mathbf{y}_{4,t}$, Bitcoin'))
+y4.coint.eigen.den.2 <- plot_density(z=2,johansen=y4.coint.eigen[[2]],title.gg=TeX('$\\mathbf{y}_{4,t}$, Ethereum'))
+
+y5.coint.eigen.den.1 <- plot_density(z=1,johansen=y5.coint.eigen[[2]],title.gg=TeX('$\\mathbf{y}_{5,t}$, Bitcoin'))
+y5.coint.eigen.den.2 <- plot_density(z=2,johansen=y5.coint.eigen[[2]],title.gg=TeX('$\\mathbf{y}_{5,t}$, Litecoin'))
+
+
 
 #Testing for coint, individually with trace
 y1.coint.trace <- make.comb(y1,1,res=F,type.jo="trace")
